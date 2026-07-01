@@ -20,6 +20,8 @@ function App() {
     setDarkMode,
     handleIncrement,
     handleDecrement,
+    handleSetQuantity,
+    handleAddQuantity,
     handleReset,
     handleDeleteHistory,
     totals,
@@ -33,7 +35,7 @@ function App() {
     if (!searchQuery.trim()) return numbers;
     const query = searchQuery.trim();
     const numQuery = parseInt(query, 10);
-    if (!isNaN(numQuery) && numQuery >= 1 && numQuery <= 99) {
+    if (!isNaN(numQuery) && numQuery >= 0 && numQuery <= 99) {
       return numbers.filter((n) => n.number === numQuery);
     }
     if (query.length === 1 || query.length === 2) {
@@ -91,6 +93,7 @@ function App() {
             <TotalCard
               totalPieces={totals.totalPieces}
               totalMoney={totals.totalMoney}
+              totalNumbers={totals.totalNumbers}
             />
 
             <div className="my-6">
@@ -110,6 +113,8 @@ function App() {
                   data={num}
                   onIncrement={() => handleIncrement(num.number)}
                   onDecrement={() => handleDecrement(num.number)}
+                  onSetQuantity={(quantity) => handleSetQuantity(num.number, quantity)}
+                  onAddQuantity={(quantity) => handleAddQuantity(num.number, quantity)}
                 />
               ))}
             </div>

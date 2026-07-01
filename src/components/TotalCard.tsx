@@ -4,13 +4,15 @@ import { TrendingUp } from 'lucide-react';
 interface TotalCardProps {
   totalPieces: number;
   totalMoney: number;
+  totalNumbers?: number;
 }
 
 export const TotalCard: React.FC<TotalCardProps> = ({
   totalPieces,
   totalMoney,
+  totalNumbers = 0,
 }) => {
-  const progress = (totalPieces / 99) * 100;
+  const progress = (totalNumbers / 100) * 100;
 
   return (
     <div className="bg-gradient-to-br from-blue-600 to-blue-800 dark:from-blue-700 dark:to-blue-900 rounded-2xl shadow-xl p-6 text-white">

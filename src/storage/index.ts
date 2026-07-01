@@ -8,7 +8,7 @@ const PRICE_PER_PIECE = 0.20;
 
 export function initializeNumbers(): NumberData[] {
   const numbers: NumberData[] = [];
-  for (let i = 1; i <= 99; i++) {
+  for (let i = 0; i <= 99; i++) {
     numbers.push({
       number: i,
       sold: 0,
@@ -68,6 +68,34 @@ export function decrementNumber(numbers: NumberData[], num: number): NumberData[
   return numbers.map((item) => {
     if (item.number === num && item.sold > 0) {
       const newSold = item.sold - 1;
+      return {
+        ...item,
+        sold: newSold,
+        total: Number((newSold * PRICE_PER_PIECE).toFixed(2)),
+      };
+    }
+    return item;
+  });
+}
+
+export function setNumberQuantity(numbers: NumberData[], num: number, quantity: number): NumberData[] {
+  return numbers.map((item) => {
+    if (item.number === num) {
+      const newSold = Math.max(0, quantity);
+      return {
+        ...item,
+        sold: newSold,
+        total: Number((newSold * PRICE_PER_PIECE).toFixed(2)),
+      };
+    }
+    return item;
+  });
+}
+
+export function addNumberQuantity(numbers: NumberData[], num: number, quantity: number): NumberData[] {
+  return numbers.map((item) => {
+    if (item.number === num) {
+      const newSold = Math.max(0, item.sold + quantity);
       return {
         ...item,
         sold: newSold,

@@ -7,6 +7,8 @@ import {
   saveTheme,
   incrementNumber,
   decrementNumber,
+  setNumberQuantity,
+  addNumberQuantity,
   initializeNumbers,
   calculateTotals,
   generateDayRecord,
@@ -53,6 +55,14 @@ export function useAppState() {
     setNumbers((prev) => decrementNumber(prev, num));
   }, []);
 
+  const handleSetQuantity = useCallback((num: number, quantity: number) => {
+    setNumbers((prev) => setNumberQuantity(prev, num, quantity));
+  }, []);
+
+  const handleAddQuantity = useCallback((num: number, quantity: number) => {
+    setNumbers((prev) => addNumberQuantity(prev, num, quantity));
+  }, []);
+
   const handleReset = useCallback(() => {
     const record = generateDayRecord(numbers);
     setHistory((prev) => [record, ...prev]);
@@ -70,6 +80,8 @@ export function useAppState() {
     setDarkMode,
     handleIncrement,
     handleDecrement,
+    handleSetQuantity,
+    handleAddQuantity,
     handleReset,
     handleDeleteHistory,
     totals: calculateTotals(numbers),
