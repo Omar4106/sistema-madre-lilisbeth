@@ -1,7 +1,8 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { Minus, Plus, Edit2, PlusCircle } from 'lucide-react';
 import { NumberData } from '../types';
 import { Modal } from './Modal';
+import { evaluateMathExpression, MathResult } from '../utils';
 
 interface NumberCardProps {
   data: NumberData;
@@ -27,6 +28,10 @@ export const NumberCard: React.FC<NumberCardProps> = ({
   const incrementIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const decrementTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const decrementIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const mathResult = useMemo<MathResult>(() => {
+    return evaluateMathExpression(inputValue);
+  }, [inputValue]);
 
   const startIncrementHold = useCallback(() => {
     onIncrement();
@@ -76,9 +81,8 @@ export const NumberCard: React.FC<NumberCardProps> = ({
   }, [stopIncrementHold, stopDecrementHold]);
 
   const handleEditSave = () => {
-    const quantity = parseInt(inputValue, 10);
-    if (!isNaN(quantity) && quantity >= 0) {
-      onSetQuantity(quantity);
+    if (mathResult.isValid && mathResult.value >= 0) {
+      onSetQuantity(mathResult.value);
       setShowEditModal(false);
       setInputValue('');
       triggerSuccess();
@@ -86,9 +90,8 @@ export const NumberCard: React.FC<NumberCardProps> = ({
   };
 
   const handleAddSave = () => {
-    const quantity = parseInt(inputValue, 10);
-    if (!isNaN(quantity) && quantity > 0) {
-      onAddQuantity(quantity);
+    if (mathResult.isValid && mathResult.value > 0) {
+      onAddQuantity(mathResult.value);
       setShowAddModal(false);
       setInputValue('');
       triggerSuccess();
@@ -101,9 +104,20 @@ export const NumberCard: React.FC<NumberCardProps> = ({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9]/g, '');
+    const value = e.target.value;
     setInputValue(value);
   };
+
+  const finalAddQuantity = useMemo(() => {
+    if (mathResult.isValid) {
+      return data.sold + mathResult.value;
+    }
+    return data.sold;
+  }, [mathResult, data.sold]);
+
+  const finalAddMoney = useMemo(() => {
+    return Number((finalAddQuantity * 0.2).toFixed(2));
+  }, [finalAddQuantity]);
 
   return (
     <>
@@ -189,18 +203,43 @@ export const NumberCard: React.FC<NumberCardProps> = ({
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">
-              Cantidad:
+              Cantidad u operación:
             </label>
             <input
               type="text"
-              inputMode="numeric"
+              inputMode="text"
               value={inputValue}
               onChange={handleInputChange}
-              placeholder={`${data.sold}`}
+              placeholder="Ej: 120, 20+20+20, 10*12"
               className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-xl"
               autoFocus
             />
           </div>
+
+          {inputValue && (
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+              {mathResult.isValid ? (
+                <div className="text-center">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    {inputValue.includes('+') || inputValue.includes('-') || inputValue.includes('*') || inputValue.includes('/') || inputValue.includes('(')
+                      ? 'Resultado de la operación:'
+                      : 'Cantidad:'}
+                  </div>
+                  <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                    {mathResult.value} pedazos
+                  </div>
+                  <div className="text-lg text-green-600 dark:text-green-400 mt-1">
+                    Total: ${mathResult.money.toFixed(2)}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-red-500 dark:text-red-400 text-sm">
+                  {mathResult.error}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3">
             <button
               onClick={() => {
@@ -213,7 +252,7 @@ export const NumberCard: React.FC<NumberCardProps> = ({
             </button>
             <button
               onClick={handleEditSave}
-              disabled={inputValue === ''}
+              disabled={!mathResult.isValid}
               className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700"
             >
               Guardar
@@ -232,7 +271,7 @@ export const NumberCard: React.FC<NumberCardProps> = ({
       >
         <div className="space-y-4">
           <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-            Cantidad actual: <span className="font-bold text-gray-800 dark:text-gray-200">{data.sold}</span>
+            Cantidad actual: <span className="font-bold text-gray-800 dark:text-gray-200">{data.sold}</span> ({(data.sold * 0.2).toFixed(2)})
           </div>
           <div>
             <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">
@@ -240,19 +279,45 @@ export const NumberCard: React.FC<NumberCardProps> = ({
             </label>
             <input
               type="text"
-              inputMode="numeric"
+              inputMode="text"
               value={inputValue}
               onChange={handleInputChange}
-              placeholder="0"
+              placeholder="Ej: 60, 20+20+20, 10*6"
               className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-xl"
               autoFocus
             />
           </div>
-          {inputValue && !isNaN(parseInt(inputValue, 10)) && (
-            <div className="text-center text-sm text-green-600 dark:text-green-400">
-              Resultado: {data.sold + parseInt(inputValue, 10)} pedazos = ${(data.sold + parseInt(inputValue, 10)) * 0.2}0
+
+          {inputValue && (
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+              {mathResult.isValid ? (
+                <div className="text-center space-y-2">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {inputValue.includes('+') || inputValue.includes('-') || inputValue.includes('*') || inputValue.includes('/') || inputValue.includes('(')
+                      ? `Operación: ${inputValue}`
+                      : 'Cantidad a agregar:'}
+                  </div>
+                  <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                    +{mathResult.value} pedazos (+${mathResult.money.toFixed(2)})
+                  </div>
+                  <div className="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Resultado final:</div>
+                    <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                      {finalAddQuantity} pedazos
+                    </div>
+                    <div className="text-lg text-green-600 dark:text-green-400">
+                      Total: ${finalAddMoney.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-red-500 dark:text-red-400 text-sm">
+                  {mathResult.error}
+                </div>
+              )}
             </div>
           )}
+
           <div className="flex gap-3">
             <button
               onClick={() => {
@@ -265,7 +330,7 @@ export const NumberCard: React.FC<NumberCardProps> = ({
             </button>
             <button
               onClick={handleAddSave}
-              disabled={inputValue === '' || parseInt(inputValue, 10) <= 0}
+              disabled={!mathResult.isValid || mathResult.value <= 0}
               className="flex-1 py-3 rounded-xl bg-purple-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700"
             >
               Agregar
